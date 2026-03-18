@@ -893,7 +893,11 @@ impl<ObjectID: FsVerityHashValue> Repository<ObjectID> {
                     == FsVerityHashValue::from_hex(name)
                         .context("Parsing expected verity hash from image name")? =>
             {
-                Ok((image, true))
+                // In insecure mode, skip overlayfs verity enforcement even when
+                // fs-verity measurement succeeds.  This is needed on kernels
+                // (e.g. 5.15) where ext4 fs-verity works but overlayfs does not
+                // support the "verity=require" mount option (added in 6.6).
+                Ok((image, !self.insecure))
             }
             Ok(_) => bail!("fs-verity content mismatch"),
             Err(MeasureVerityError::VerityMissing | MeasureVerityError::FilesystemNotSupported)
